@@ -1,0 +1,122 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.ibm.swg.im.sdi.apps.org.apache</groupId>
+    <artifactId>spark</artifactId>
+    <packaging>pom</packaging>
+    <version>1.3.1</version>
+
+    <properties>
+
+        <!-- The URL of the file to be downloaded. -->
+        <download.url>http://www.apache.org/dist/spark/spark-1.3.1/spark-1.3.1.tgz</download.url>
+
+        <!-- Information describing where the file is placed in the Maven repository. -->
+        <download.directory>com/ibm/swg/im/sdi/apps/org/apache/spark/1.3.1</download.directory>
+        <download.version>1.3.1</download.version>
+
+        <!-- github server corresponds to entry in ~/.m2/settings.xml -->
+        <github.global.server>github</github.global.server>
+    </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>internal.repo</id>
+            <name>Temporary Staging Repository</name>
+            <url>file://${project.build.directory}/mvn-repo</url>
+        </repository>
+    </distributionManagement>
+
+    <repositories>
+
+        <!--
+        Identify which GitHub repository will receive the output artifact.
+        -->
+        <repository>
+            <id>jenkins-test-1-mvn-repo</id>
+            <url>https://raw.github.com/dockter-84/jenkins-test-1/mvn-repo/</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+
+    </repositories>
+
+    <build>
+        <plugins>
+
+            <!---
+            Plugin to download a file based on its URL.
+            -->
+            <plugin>
+                <groupId>com.googlecode.maven-download-plugin</groupId>
+                <artifactId>download-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <execution>
+                        <id>download-file</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>${download.url}</url>
+                            <outputDirectory>${project.build.directory}/mvn-repo/${download.directory}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!---
+            Plugin to upload output artifact to remote repository.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <altDeploymentRepository>internal.repo::default::file://${project.build.directory}/mvn-repo</altDeploymentRepository>
+                </configuration>
+            </plugin>
+
+            <!---
+            Plugin to upload the output artifact to the remote Maven repository on GitHub.
+            -->
+            <plugin>
+                <groupId>com.github.github</groupId>
+                <artifactId>site-maven-plugin</artifactId>
+                <version>0.12</version>
+                <configuration>
+                    <message>Maven artifacts for ${project.version}</message>
+                    <noJekyll>true</noJekyll>
+                    <outputDirectory>${project.build.directory}/mvn-repo</outputDirectory>
+                    <branch>refs/heads/mvn-repo</branch>
+                    <merge>true</merge>
+                    <includes>
+                        <include>**/*</include>
+                    </includes>
+                    <repositoryName>jenkins-test-1</repositoryName>
+                    <repositoryOwner>dockter-84</repositoryOwner>
+                    <server>github</server>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>site</goal>
+                        </goals>
+                        <phase>deploy</phase>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.eclipse.mylyn.github</groupId>
+                        <artifactId>org.eclipse.egit.github.core</artifactId>
+                        <version>2.0.3</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>
